@@ -1,23 +1,49 @@
 <?php
-header('Content-Type: application/json');
-$email = $_POST['email'];
-if(empty($email)){
-    echo json_encode([]);
+
+include 'redis.php';
+
+$sessionId = $_POST['sessionId'];
+
+if (!$sessionId) {
+    echo json_encode(['status' => 'error', 'msg' => 'No session']);
     exit();
 }
-$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-$filter = ['email' => $email];
-$options = ['sort' => ['_id' => -1]];
-$query = new MongoDB\Driver\Query($filter, $options);
-$cursor = $manager->executeQuery('guvi.profile', $query);
-$results = [];
-foreach($cursor as $doc){
-    $results[] = [
-        'age' => $doc->age,
-        'dob' => $doc->dob,
-        'contact' => $doc->contact,
-        'updated_at' => isset($doc->updated_at) ? $doc->updated_at : 'N/A'
-    ];
+
+$email = $redis->get("session:$sessionId");
+
+if (!$email) {
+    echo json_encode(['status' => 'error', 'msg' => 'Session expired']);
+    exit();
 }
-echo json_encode($results);
+
+$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+
+$filter = ['email' => $email];
+$query  = new MongoDB\Driver\Query($filter);
+
+$cursor = $manager->executeQuery('guvi.profile', $query);
+$docs   = $cursor->toArray();
+
+if (count($docs) > 0) {
+    $profile = (array) $docs[0];
+
+    // Convert date from any format to YYYY-MM-DD for HTML date input
+    $dob = $profile['dob'] ?? '';
+    if ($dob) {
+        $parsed = date_create($dob);
+        if ($parsed) {
+            $dob = date_format($parsed, 'Y-m-d');
+        }
+    }
+
+    echo json_encode([
+        'status'  => 'success',
+        'age'     => $profile['age']     ?? '',
+        'dob'     => $dob,
+        'contact' => $profile['contact'] ?? ''
+    ]);
+} else {
+    echo json_encode(['status' => 'success', 'age' => '', 'dob' => '', 'contact' => '']);
+}
+
 ?>

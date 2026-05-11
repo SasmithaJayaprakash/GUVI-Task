@@ -1,87 +1,88 @@
-$(document).ready(function(){
-    var sessionId = localStorage.getItem("sessionId");
-    var email = localStorage.getItem("user");
-    if(!sessionId || !email){
-        window.location = "login.html";
+$(document).ready(function () {
+
+    let sessionId = localStorage.getItem("sessionId");
+
+    if (!sessionId) {
+        window.location = "index.html";
         return;
     }
+
     $.ajax({
         url: './php/session_check.php',
         type: 'POST',
-        data: {sessionId: sessionId},
-        success: function(res){
-            if(res !== "valid"){
-                localStorage.removeItem("user");
+        data: { sessionId },
+        success: function (res) {
+
+            if (res !== "valid") {
                 localStorage.removeItem("sessionId");
-                window.location = "login.html";
-            } else {
-                loadProfile(email);
+                window.location = "index.html";
+                return;
             }
-        },
-        error: function(){
-            window.location = "login.html";
+
+            $.ajax({
+                url: './php/get_profile.php',
+                type: 'POST',
+                data: { sessionId },
+                success: function (res) {
+                    try {
+                        let data = JSON.parse(res);
+                        if (data.status === 'success') {
+                            if (data.age)     $('#age').val(data.age);
+                            if (data.dob)     $('#dob').val(data.dob);
+                            if (data.contact) $('#contact').val(data.contact);
+                        }
+                    } catch (e) {}
+                }
+            });
+
         }
     });
+
 });
 
-function loadProfile(email){
-    $.ajax({
-        url: './php/get_profile.php',
-        type: 'POST',
-        data: {email: email},
-        success: function(res){
-            var data = JSON.parse(res);
-            if(data.length > 0){
-                $('#age').val(data[0].age);
-                $('#dob').val(data[0].dob);
-                $('#contact').val(data[0].contact);
-            }
-        }
-    });
-}
+function updateProfile() {
 
-function formatDob(){
-    var val = $('#dob').val().replace(/\D/g, '');
-    var result = '';
-    if(val.length > 0) result = val.substring(0,2);
-    if(val.length >= 2) result = val.substring(0,2) + '-' + val.substring(2,4);
-    if(val.length >= 4) result = val.substring(0,2) + '-' + val.substring(2,4) + '-' + val.substring(4,8);
-    $('#dob').val(result);
-}
+    let sessionId = localStorage.getItem("sessionId");
+    let age       = $('#age').val().trim();
+    let dob       = $('#dob').val();
+    let contact   = $('#contact').val().trim();
 
-function updateProfile(){
-    var email = localStorage.getItem("user");
-    var age = $('#age').val().trim();
-    var dob = $('#dob').val().trim();
-    var contact = $('#contact').val().trim();
-    if(age === "" || dob === "" || contact === ""){
-        alert("All fields required");
+    if (age === "" || dob === "" || contact === "") {
+        $('#msg').html('<div class="error-box">All fields are required</div>');
         return;
     }
+
+    if (contact.length !== 10 || isNaN(contact)) {
+        $('#msg').html('<div class="error-box">Contact must be 10 digits</div>');
+        return;
+    }
+
     $.ajax({
         url: './php/update_profile.php',
         type: 'POST',
-        data: {email:email, age:age, dob:dob, contact:contact},
-        success: function(res){
-            alert(res);
-            loadProfile(email);
+        data: { sessionId, age, dob, contact },
+        success: function (response) {
+            $('#msg').html('<div class="alert alert-success">' + response + '</div>');
         },
-        error: function(){
-            alert("Could not connect to server");
+        error: function () {
+            $('#msg').html('<div class="error-box">Could not connect to server</div>');
         }
     });
+
 }
 
-function logout(){
-    var sessionId = localStorage.getItem("sessionId");
+function logout() {
+
+    let sessionId = localStorage.getItem("sessionId");
+
     $.ajax({
         url: './php/logout.php',
         type: 'POST',
-        data: {sessionId: sessionId},
-        success: function(){
-            localStorage.removeItem("user");
+        data: { sessionId },
+        success: function () {
             localStorage.removeItem("sessionId");
-            window.location = "login.html";
+            window.location = "index.html";
         }
     });
+
 }
