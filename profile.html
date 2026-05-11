@@ -12,12 +12,12 @@
 <h2>Profile</h2>
 <div id="msg"></div>
 <input type="number" id="age" class="form-control mb-3" placeholder="Age">
-<input type="date" id="dob" class="form-control mb-3">
-<input type="text" id="contact" class="form-control mb-3" placeholder="Contact (10 digits)">
+<input type="text" id="dob" class="form-control mb-3" placeholder="DD-MM-YYYY" maxlength="10" oninput="formatDob()" inputmode="numeric">
+<input type="text" id="contact" class="form-control mb-3" placeholder="Contact (10 digits)" inputmode="numeric">
 <button onclick="updateProfile()" class="btn btn-primary w-100 mb-2">Update</button>
 <button onclick="logout()" class="btn btn-danger w-100 mb-2">Logout</button>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="./js/profile.js"></script>
+<script src="./js/profile.js?v=7"></script>
 </body>
 </html>
